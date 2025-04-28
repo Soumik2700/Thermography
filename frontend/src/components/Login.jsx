@@ -17,7 +17,7 @@ const Login = () => {
 
     async function handelClick() {
         try {
-            const response = await axios.post("http://localhost:8100/login", inputs);
+            const response = await axios.post("https://thermography.onrender.com/login", inputs);
             const data = response.data;
             console.log(data);
             const { token, ...user } = data;

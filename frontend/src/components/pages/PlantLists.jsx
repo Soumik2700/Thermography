@@ -4,7 +4,7 @@ import AddPlant from '../AddPlant';
 import Plant from '../Plant';
 import { useSelector } from "react-redux";
 import axios from "axios";
-import CircularIndeterminate from '../CircularIndeterminate';
+import CircularProgressThickness from '../CircularProgressThickness';
 
 
 const PlantLists = () => {
@@ -46,7 +46,7 @@ const PlantLists = () => {
     const fetchPlants = async (currentPage) => {
         try {
             setLoading(true);
-            const response = await axios.get(`http://localhost:8100/getAllPlants?page=${currentPage}&limit=${itemsPerPage}`, {
+            const response = await axios.get(`https://thermography.onrender.com/getAllPlants?page=${currentPage}&limit=${itemsPerPage}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -94,7 +94,7 @@ const PlantLists = () => {
                 return; // Exit the function if values are invalid
             }
 
-            const response = await axios.post("http://localhost:8100/createPlant",
+            const response = await axios.post("https://thermography.onrender.com/createPlant",
                 newPlant,
                 {
                     headers: {
@@ -226,7 +226,11 @@ const PlantLists = () => {
                         ))}
                     </tbody>
                 </table>
-                {loading && <CircularIndeterminate/>}
+                {loading && <>
+                    <div className='w-screen flex justify-center'>
+                        <CircularProgressThickness />
+                    </div>
+                </>}
                 {!hasMore && <div className="text-center py-2 text-gray-500">No more plants to load.</div>}
             </div>
 
