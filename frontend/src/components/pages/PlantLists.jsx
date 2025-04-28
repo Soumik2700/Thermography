@@ -75,6 +75,7 @@ const PlantLists = () => {
     };
 
 
+    console.log("Plants", plants);
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setNewPlant(prev => ({
@@ -155,7 +156,7 @@ const PlantLists = () => {
             {/* Latitude Longitude Search */}
             <div className="flex items-center gap-2 mb-2">
                 <input
-                    type="number"
+                    type="text"
                     value={searchLat}
                     onChange={(e) => setSearchLat(e.target.value)}
                     placeholder="Latitude"

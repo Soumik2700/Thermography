@@ -42,3 +42,36 @@ export async function getAllPlants(req, res){
         res.status(500).json({ error: 'Internal Server Error' });
     }
 }
+
+export async function editPlant(req, res) {
+    const { name, address, latitude, longitude, organization, sizeOfSiteMWAC, sizeOfSiteMWDC, projectCode } = req.body;
+
+    if (!name || !address || !latitude || !longitude || !organization || !sizeOfSiteMWAC || !sizeOfSiteMWDC || !projectCode) {
+        return res.status(400).json({ message: "All fields are required!" });
+    }
+
+    try {
+        const plant = await Plant.findOne({ projectCode }); // Added 'await'
+
+        if (!plant) {
+            return res.status(404).json({ message: "Cannot find any plant!" });
+        }
+
+        // Update plant fields
+        plant.name = name;
+        plant.address = address;
+        plant.latitude = latitude;
+        plant.longitude = longitude;
+        plant.organization = organization;
+        plant.sizeOfSiteMWAC = sizeOfSiteMWAC;
+        plant.sizeOfSiteMWDC = sizeOfSiteMWDC;
+
+        // Save the updated plant
+        const updatedPlant = await plant.save();
+
+        res.status(200).json(updatedPlant);
+
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+}
