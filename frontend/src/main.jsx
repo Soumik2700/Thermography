@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { createHashRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import Login from './components/Login.jsx'
@@ -9,7 +9,7 @@ import { Provider } from 'react-redux'
 import store from './utils/store.js'
 import ProtectedRoutes from './components/ProtectedRoutes.jsx'
 
-const appRouter = createBrowserRouter([
+const appRouter = createHashRouter([
   {
     path:"/",
     element:<Login/>,
