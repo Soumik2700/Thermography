@@ -6,17 +6,21 @@ import { useSelector } from "react-redux";
 import axios from "axios";
 import CircularProgressThickness from '../CircularProgressThickness';
 
-
 const PlantLists = () => {
     const apikey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     const token = useSelector((state) => state.user.token);
 
     const [plants, setPlants] = useState([]);
-    const [page, setPage] = useState(1);
-    const [loading, setLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [totalCount, setTotalCount] = useState(0);
+    const [pages, setPages] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+    const [lastId, setLastId] = useState(null);
 
-    const itemsPerPage = 5;
+
+    console.log(plants.length);
+
+    const itemsPerPage = 10;
 
     const [mapCenter, setMapCenter] = useState({ lat: 23.2599, lng: 77.4126 });
     const [searchLat, setSearchLat] = useState('');
@@ -38,44 +42,71 @@ const PlantLists = () => {
         height: '400px',
     };
 
-    useEffect(() => {
-        fetchPlants(page);
-        // eslint-disable-next-line
-    }, [page]);
-
-    const fetchPlants = async (currentPage) => {
+    const fetchPlants = async () => {
         try {
-            setLoading(true);
-            const response = await axios.get(`https://thermography.onrender.com/getAllPlants?page=${currentPage}&limit=${itemsPerPage}`, {
+            setIsLoading(true);
+            let url = `https://thermography.onrender.com/getAllPlants?limit=${itemsPerPage}`;
+            if (lastId) url += `&lastId=${lastId}`;
+
+            const response = await axios.get(url, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
 
-            const fetchedPlants = response.data;
+            const { plants: fetchedPlants, hasMoreData } = response.data;
 
-            if (fetchedPlants.length < itemsPerPage) {
-                setHasMore(false);
-            }
-
+            // If first load, set directly, else append
             setPlants(prev => {
-                const existingIds = new Set(prev.map(plant => plant._id));
-                const newPlants = fetchedPlants.filter(plant => !existingIds.has(plant._id));
-                return [...prev, ...newPlants];
+                const seenIds = new Set(prev.map(p => p._id));
+                const filtered = fetchedPlants.filter(p => !seenIds.has(p._id));
+                return [...prev, ...filtered];
             });
 
-            // setPlants(prev => [...prev, ...fetchedPlants]);
 
-            setLoading(false);
+            // Update the lastId for next fetch
+            if (fetchedPlants.length > 0) {
+                const lastFetched = fetchedPlants[fetchedPlants.length - 1];
+                if (lastFetched && lastFetched._id) {
+                    setLastId(lastFetched._id);
+                }
+            }
 
+
+            setHasMore(hasMoreData);
+
+
+            console.log("Fetched:", fetchedPlants.length);
+            console.log("Before Append:", plants.length);
+            console.log("Last ID set to:", fetchedPlants.at(-1)?._id);
         } catch (error) {
             console.error("Error fetching plants:", error);
-            setLoading(false);
+        } finally {
+            setIsLoading(false);
         }
+        
     };
 
+    useEffect(() => {
+        fetchPlants(pages);
+        // eslint-disable-next-line
+    }, [pages]);
 
-    console.log("Plants", plants);
+    useEffect(() => {
+        function handleScroll() {
+            if (
+                window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100 &&
+                hasMore && !isLoading
+            ) {
+                setPages(prevPage => prevPage + 1);
+            }
+        }
+
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, [hasMore, isLoading]);
+
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setNewPlant(prev => ({
@@ -84,15 +115,15 @@ const PlantLists = () => {
         }));
     };
 
+    // console.log("plants", plants);
     const handleAddPlant = async () => {
         try {
             const lat = parseFloat(newPlant.latitude);
             const lng = parseFloat(newPlant.longitude);
 
-            // Validate latitude and longitude
             if (isNaN(lat) || isNaN(lng)) {
                 console.error("Invalid latitude or longitude");
-                return; // Exit the function if values are invalid
+                return;
             }
 
             const response = await axios.post("https://thermography.onrender.com/createPlant",
@@ -105,7 +136,7 @@ const PlantLists = () => {
             );
             const data = response.data;
             const plantToAdd = {
-                id: data.id || plants.length + 1,
+                id: data._id || plants.length + 1,
                 name: newPlant.name,
                 lat: lat,
                 lng: lng,
@@ -129,7 +160,6 @@ const PlantLists = () => {
         }
     };
 
-
     const handleLatLngSearch = () => {
         if (searchLat && searchLng) {
             setMapCenter({
@@ -139,21 +169,8 @@ const PlantLists = () => {
         }
     };
 
-    useEffect(() => {
-        const handleScroll = () => {
-            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 10 && !loading && hasMore) {
-                setPage(prev => prev + 1);
-            }
-        };
-
-        window.addEventListener('scroll', handleScroll);
-
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [loading, hasMore]);
-
     return (
-        <div className="p-4" style={{ height: '100vh'}}>
-            {/* Latitude Longitude Search */}
+        <div className="p-4" style={{ height: '90vh' }}>
             <div className="flex items-center gap-2 mb-2">
                 <input
                     type="text"
@@ -177,21 +194,19 @@ const PlantLists = () => {
                 </button>
             </div>
 
-            {/* Google Map */}
-            <LoadScript googleMapsApiKey={apikey}>
-                <GoogleMap
-                    mapContainerStyle={mapContainerStyle}
-                    center={mapCenter}
-                    zoom={5}
-                >
-                    {plants.map((plant) => (
-                        <Marker key={`${plant._id}-${plant.name}`} position={{ lat: parseFloat(plant.latitude), lng: parseFloat(plant.longitude) }} />
-                    ))}
+            <GoogleMap
+                mapContainerStyle={mapContainerStyle}
+                center={mapCenter}
+                zoom={5}
+            >
+                {plants.map((plant) => (
+                    <Marker
+                        key={`${plant._id}`}
+                        position={{ lat: parseFloat(plant.latitude), lng: parseFloat(plant.longitude) }}
+                    />
+                ))}
+            </GoogleMap>
 
-                </GoogleMap>
-            </LoadScript>
-
-            {/* Search and Add Button */}
             <div className="flex justify-between items-center my-4">
                 <input
                     type="text"
@@ -206,7 +221,6 @@ const PlantLists = () => {
                 </button>
             </div>
 
-            {/* Plant Table */}
             <div className="overflow-x-auto">
                 <table className="min-w-full bg-white border border-gray-300">
                     <thead>
@@ -227,15 +241,13 @@ const PlantLists = () => {
                         ))}
                     </tbody>
                 </table>
-                {loading && <>
+                {isLoading && (
                     <div className='w-screen flex justify-center'>
                         <CircularProgressThickness />
                     </div>
-                </>}
-                {!hasMore && <div className="text-center py-2 text-gray-500">No more plants to load.</div>}
+                )}
             </div>
 
-            {/* Modal Popup */}
             {showModal && (
                 <AddPlant
                     newPlant={newPlant}

@@ -8,7 +8,10 @@ import PlantLists from './components/pages/PlantLists.jsx'
 import { Provider } from 'react-redux'
 import store from './utils/store.js'
 import ProtectedRoutes from './components/ProtectedRoutes.jsx'
+import PlantMissions from './components/pages/PlantMissions.jsx'
+import { LoadScript } from '@react-google-maps/api'
 
+const apikey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const appRouter = createHashRouter([
   {
     path:"/",
@@ -25,9 +28,13 @@ const appRouter = createHashRouter([
           {
             path:"",
             element:<PlantLists/>
-          }
+          },
+          {
+            path: ":id/plantMissions",
+            element: <PlantMissions />
+          }       
         ]
-      }
+      },
     ]
   }
 ])
@@ -35,7 +42,9 @@ const appRouter = createHashRouter([
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>
-      <RouterProvider router={appRouter}/>
+      <LoadScript googleMapsApiKey={apikey}>
+        <RouterProvider router={appRouter}/>
+      </LoadScript>
     </Provider>
   </StrictMode>,
 )

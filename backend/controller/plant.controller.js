@@ -24,24 +24,27 @@ export async function addNewPlant(req, res){
     }
 }
 
-export async function getAllPlants(req, res){
+export async function getAllPlants(req, res) {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 5;
+        const limit = parseInt(req.query.limit) || 10;
+        const lastId = req.query.lastId;
 
-        const skip = (page - 1) * limit;
+        const query = lastId ? { _id: { $lt: lastId } } : {};
 
-        const plants = await Plant.find()
+        const plants = await Plant.find(query)
             .sort({ _id: -1 })
-            .skip(skip)
             .limit(limit);
 
-        res.status(200).json(plants);
+        const totalCount = await Plant.countDocuments();
+        const hasMoreData = plants.length === limit;
+
+        res.status(200).json({ plants, totalCount, hasMoreData });
     } catch (error) {
         console.error('Error fetching plants:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 }
+
 
 export async function editPlant(req, res) {
     const { name, address, latitude, longitude, organization, sizeOfSiteMWAC, sizeOfSiteMWDC, projectCode } = req.body;
@@ -73,5 +76,24 @@ export async function editPlant(req, res) {
 
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+}
+
+export async function getPlantDetails(req, res){
+    const {plantId} = req.query;
+
+    if(!plantId){
+        return res.status(400).json({message: "Plant id is required!"});
+    }
+
+    try{
+        const plant = await Plant.findOne({_id:plantId});
+        if(!plant){
+            return res.status(404).json({message: "No plant found!"});
+        }
+
+        res.status(200).json({plant});
+    }catch(err){
+        res.status(500).json({message: err.message});
     }
 }

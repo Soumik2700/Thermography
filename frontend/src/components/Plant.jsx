@@ -1,8 +1,16 @@
+import { Link } from "react-router-dom";
+
 function Plant({plant, index}){
+    const plantId = plant?._id;
     return(
         <>
             <td className="border px-4 py-2">{index + 1}</td>
-            <td className="border px-4 py-2">{plant.name}</td>
+            
+            <td className="border px-4 py-2">
+                <Link to={`/plants/${plantId}/plantMissions`} className="text-blue-500 underline">
+                    {plant.name}
+                </Link>
+            </td>
             <td className="border px-4 py-2">
                 <a href="#" className="text-blue-500 underline">Open Portal ({plant.name})</a>
             </td>
